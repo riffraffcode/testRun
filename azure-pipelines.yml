@@ -1,19 +1,26 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+trigger: none
 
-trigger:
-- master
+jobs:
 
-pool:
-  vmImage: 'ubuntu-latest'
+- job: Build
+  timeoutInMinutes: 0
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+  strategy:
+    matrix:
+      mac-10.14:
+        imageName: 'macOS-10.14'
+  pool:
+    vmImage: $(imageName)
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  steps:
+  - checkout: self
+    fetchDepth: 64
+
+  - script: ./_ci/bootstrap.sh
+    displayName: 'Run bootstrap script'
+
+  - script: |
+      unset CC && source /opt/local/share/macports/setupenv.bash
+      export PATH="/opt/mports/bin:${PWD}/../mpbb:$PATH" && hash -r
+      sudo env PASTE_URL="$PASTE_URL" ./runner
+    displayName: 'Test ports'
